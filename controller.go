@@ -108,12 +108,20 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 			break
 		} else if strings.Index("auto", commandString) != -1 {
 			// Auto 控制模式
-			fmt.Println("Enter into auto run mode.")
-			*runFlag = true
-			ch <- true // 另一个goroutine退出阻塞状态
+			if *runFlag {
+				fmt.Println("Aler in auto run mode.")
+			} else {
+				fmt.Println("Enter into auto run mode.")
+				*runFlag = true
+				ch <- true // 另一个goroutine退出阻塞状态
+			}
 		} else if strings.Index("cancel", commandString) != -1 {
-			*runFlag = false //通知另一个goroutine退出运行，进入通道阻塞模式
-			fmt.Println("Exit from auot run mode.")
+			if !*runFlag {
+				fmt.Println("Alerady exit from auto run mode.")
+			} else {
+				*runFlag = false //通知另一个goroutine退出运行，进入通道阻塞模式
+				fmt.Println("Exit from auot run mode.")
+			}
 		} else if isDigitalStr(commandString) {
 			writtenBytesNum, err := com.Write(append(responsePrefix, append(bytes.ToLower(terminalScanner.Bytes()), ";"...)...))
 			if err != nil {
