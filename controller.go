@@ -87,17 +87,6 @@ func checkTerminalScanResult(result bool) {
 	}
 }
 
-func connectSlice(srcSlice, newSlice []byte) []byte {
-	// Go语言文档中明确指出，作为一种特殊情况，可以把字符串附加到字节切片上，但是实际操作却不被允许
-	if len(newSlice) == 0 {
-		return append(srcSlice, ';')
-	}
-	for _, elem := range newSlice {
-		srcSlice = append(srcSlice, elem)
-	}
-	return append(srcSlice, ';')
-}
-
 func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 	for {
 		fmt.Print("Command -->:")
@@ -127,7 +116,7 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 			*runFlag = false //通知另一个goroutine退出运行，进入通道阻塞模式
 			fmt.Println("Exit from auot run mode.")
 		} else if isDigitalStr(commandString) {
-			writtenBytesNum, err := com.Write(connectSlice(responsePrefix, bytes.ToLower(terminalScanner.Bytes())))
+			writtenBytesNum, err := com.Write(append(responsePrefix, append(bytes.ToLower(terminalScanner.Bytes()), ";"...)...))
 			if err != nil {
 				fmt.Println("在向串口设备写入数据时发生错误，", err)
 			}
@@ -156,10 +145,10 @@ func autoRunMode(comObj *serial.Port, runFlag *bool) {
 			utilizationParseToInt64 := calculateSpeedToInt64(avergeSystemUtilization[0])
 			if 0 <= utilizationParseToInt64 && utilizationParseToInt64 <= 100 {
 				// 不打算接收函数的任何返回值，接收的话提示没有新值的语法错误，因为终端被用于接收command，不能输出
-				comObj.Write(connectSlice(noResponsePrefix, []byte(strconv.FormatInt(utilizationParseToInt64, 10))))
+				comObj.Write(append(noResponsePrefix, append([]byte(strconv.FormatInt(utilizationParseToInt64, 10)), ";"...)...))
 			} else {
 				// 如果能运行到这里，很可能是发生了什么错误了，为避免风机失控，选择关闭它
-				comObj.Write(connectSlice(noResponsePrefix, []byte("0")))
+				comObj.Write(append(noResponsePrefix, append([]byte("0"), ";"...)...))
 			}
 		} else {
 			// 如果 runFlag 被修改为false，回到这里阻塞
