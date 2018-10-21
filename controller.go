@@ -94,43 +94,39 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 		fmt.Println("Command from terminal: ", terminalScanner.Text())
 		// 如果从终端接收到退出命令字符串，先关闭风机，然后退出
 		commandString = strings.ToLower(terminalScanner.Text())
-		if strings.Index("exit,quit", commandString) != -1 {
-			_, err := com.Write([]byte("N,2#0;"))
-			if err != nil {
-				fmt.Println("在向串口设备写入数据时发生错误，", err)
-			}
-			// 需要添加延迟，等待从终端读取的数据写入到串口设备后再关闭设备，然后退出
-			// 否则退出后，在下次操作（不重启串口设备）时，第一次发送的命令会导致风机停转
-			// 等待时间未精确计量
+		switch commandString {
+		case "exit", "quit":
+			com.Write([]byte("N,2#0;"))
 			time.Sleep(300 * time.Millisecond)
 			*runFlag = false //通知另一个goroutine阻塞，似乎没有啥必要
 			exitCh <- true   // 取消主程序（线程？）的阻塞，所有的goroutine都会被结束
 			break
-		} else if strings.Index("auto", commandString) != -1 {
+		case "auto":
 			// Auto 控制模式
 			fmt.Println("Enter into auto run mode.")
 			*runFlag = true
 			ch <- true // 另一个goroutine退出阻塞状态
-		} else if strings.Index("cancel", commandString) != -1 {
+		case "cancel":
 			*runFlag = false //通知另一个goroutine退出运行，进入通道阻塞模式
 			fmt.Println("Exit from auot run mode.")
-		} else if isDigitalStr(commandString) {
-			writtenBytesNum, err := com.Write(append(responsePrefix, append(bytes.ToLower(terminalScanner.Bytes()), ";"...)...))
-			if err != nil {
-				fmt.Println("在向串口设备写入数据时发生错误，", err)
+		default:
+			// 这个命令字符串实际是数字字符串，但是实在是没法按照同类型的switc条件和case值类型的要求写了
+			if isDigitalStr(commandString) {
+				writtenBytesNum, err := com.Write(append(responsePrefix, append(bytes.ToLower(terminalScanner.Bytes()), ";"...)...))
+				if err != nil {
+					fmt.Println("在向串口设备写入数据时发生错误，", err)
+				}
+				fmt.Printf("向串口设备写入 %v 个字节.\n", writtenBytesNum)
+				time.Sleep(500 * time.Millisecond) // 等待串口准备返回数据
+				readBytesNum, err := com.Read(comReadBuffer)
+				if err != nil {
+					fmt.Println("Failed to read data from serial port, error = ", err)
+				}
+				fmt.Printf("Response -->:%v\n", string(comReadBuffer[:readBytesNum]))
+				com.Flush()
+			} else {
+				fmt.Println("[ERROR] Received an unknown command:", commandString)
 			}
-			fmt.Printf("向串口设备写入 %v 个字节.\n", writtenBytesNum)
-			time.Sleep(500 * time.Millisecond) // 等待串口准备返回数据
-			readBytesNum, err := com.Read(comReadBuffer)
-			if err != nil {
-				fmt.Println("Failed to read data from serial port, error = ", err)
-			}
-			fmt.Printf("Response -->:%v\n", string(comReadBuffer[:readBytesNum]))
-			// 清空，也不知道清空什么。serial lib中说道：
-			// 用于丢弃写入到串口设备中还没有发送的数据或者串口设备已经接收但还没有读取的数据，但是没有接收/发送方向控制
-			com.Flush()
-		} else {
-			fmt.Println("[ERROR] Received an unknown command:", commandString)
 		}
 	}
 }
