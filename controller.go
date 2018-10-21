@@ -120,6 +120,11 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 		default:
 			// 这个命令字符串实际是数字字符串，但是实在是没法按照同类型的switc条件和case值类型的要求写了
 			if isDigitalStr(commandString) {
+				if *runFlag {
+					// 在auto run模式下，不处理手动输入的占空比
+					fmt.Println("If you want to control fan mannually, you should exit from auto run mode.")
+					continue
+				}
 				writtenBytesNum, err := com.Write(append(responsePrefix, append(bytes.ToLower(terminalScanner.Bytes()), ";"...)...))
 				if err != nil {
 					fmt.Println("在向串口设备写入数据时发生错误，", err)
