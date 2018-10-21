@@ -103,12 +103,20 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 			break
 		case "auto":
 			// Auto 控制模式
-			fmt.Println("Enter into auto run mode.")
-			*runFlag = true
-			ch <- true // 另一个goroutine退出阻塞状态
+			if *runFlag {
+				fmt.Println("Alerady in auto run mode.")
+			} else {
+				fmt.Println("Enter into auto run mode.")
+				*runFlag = true
+				ch <- true // 另一个goroutine退出阻塞状态
+			}
 		case "cancel":
-			*runFlag = false //通知另一个goroutine退出运行，进入通道阻塞模式
-			fmt.Println("Exit from auot run mode.")
+			if !*runFlag {
+				fmt.Println("Alerady exit from auto run mode.")
+			} else {
+				*runFlag = false //通知另一个goroutine退出运行，进入通道阻塞模式
+				fmt.Println("Exit from auot run mode.")
+			}
 		default:
 			// 这个命令字符串实际是数字字符串，但是实在是没法按照同类型的switc条件和case值类型的要求写了
 			if isDigitalStr(commandString) {
