@@ -21,7 +21,7 @@ var comPort = flag.String("port", "COM6", "Specify a port for connection(Charact
 
 // 放在这里都是全局可以访问的变量
 var scanResult bool
-var runMode = false
+var runMode bool
 var avergeSystemUtilization int
 var scannerBuffer = make([]byte, 32)
 var responsePrefix = []byte("R,2#")
@@ -68,9 +68,8 @@ func isDigitalStr(inputStr string) bool {
 	}
 	if strLeng == count {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
 func calculateSpeedToInt64(utilization float64) int64 {
