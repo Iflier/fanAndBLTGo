@@ -16,12 +16,10 @@ import (
 	"github.com/tarm/serial"
 )
 
-var sleepTime = flag.Int("sleeptime", 5, "Command transmission interval in automatic mode.")
+var sleepTime = flag.Int("sleeptime", 1, "Command transmission interval in automatic mode.")
 var comPort = flag.String("port", "COM6", "Specify a port for connection(Characteres should be uppper case).")
 
 // 放在这里都是全局可以访问的变量
-// var err error
-// var com = &serial.Port{}
 var scanResult bool
 var runMode bool
 var avergeSystemUtilization int
@@ -48,6 +46,7 @@ var conf = &serial.Config{
 var com, _ = serial.OpenPort(conf) // 如果不忽略这个函数返回的err会导致语法错误，暂不清楚其原因
 
 func main() {
+	flag.Parse()
 	defer com.Close()
 	fmt.Println("[INFO] Starting ...")
 	// 设置这个scanner的缓存大小，最多缓存64个字节。默认大小为 64KB
