@@ -21,7 +21,7 @@ var comPort = flag.String("port", "COM6", "Specify a port for connection(Charact
 
 // 放在这里都是全局可以访问的变量
 var scanResult bool
-var runMode bool
+var runMode = false
 var avergeSystemUtilization int
 var scannerBuffer = make([]byte, 32)
 var responsePrefix = []byte("R,2#")
@@ -106,7 +106,7 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 			*runFlag = false //通知另一个goroutine阻塞，似乎没有啥必要
 			exitCh <- true   // 取消主程序（线程？）的阻塞，所有的goroutine都会被结束
 			break
-		} else if strings.Index("auto", commandString) != -1 {
+		} else if strings.EqualFold("auto", commandString) {
 			// Auto 控制模式
 			if *runFlag {
 				fmt.Println("Aler in auto run mode.")
@@ -123,6 +123,11 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 				fmt.Println("Exit from auot run mode.")
 			}
 		} else if isDigitalStr(commandString) {
+			if *runFlag {
+				// 在auto run模式下，不处理手动输入的占空比
+				fmt.Println("If you want to control fan mannually, you should exit from auto run mode.")
+				continue
+			}
 			writtenBytesNum, err := com.Write(append(responsePrefix, append(bytes.ToLower(terminalScanner.Bytes()), ";"...)...))
 			if err != nil {
 				fmt.Println("在向串口设备写入数据时发生错误，", err)
