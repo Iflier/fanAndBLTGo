@@ -68,9 +68,8 @@ func isDigitalStr(inputStr string) bool {
 	}
 	if strLeng == count {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
 func calculateSpeedToInt64(utilization float64) int64 {
