@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/tarm/serial"
@@ -58,17 +57,13 @@ func main() {
 }
 
 func isDigitalStr(inputStr string) bool {
-	// 很low的函数 :-(
-	strLeng := len(inputStr)
-	var count = 0
-	for _, val := range inputStr {
-		if unicode.IsDigit(rune(val)) {
-			count++
+	intResult, err := strconv.Atoi(inputStr)
+	if err == nil {
+		if 0 <= intResult && intResult <= 100 {
+			return true
 		}
 	}
-	if strLeng == count {
-		return true
-	}
+	fmt.Printf("Valid value range(0 ~ 100), got unexcepted value for duty control: %v", inputStr)
 	return false
 }
 
