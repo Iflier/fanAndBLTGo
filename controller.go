@@ -93,7 +93,7 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 		fmt.Println("Command from terminal: ", terminalScanner.Text())
 		// 如果从终端接收到退出命令字符串，先关闭风机，然后退出
 		commandString = strings.ToLower(terminalScanner.Text())
-		if strings.Index("exit,quit", commandString) != -1 {
+		if strings.EqualFold("exit", commandString) || strings.EqualFold("quit", commandString) {
 			_, err := com.Write([]byte("N,2#0;"))
 			if err != nil {
 				fmt.Println("在向串口设备写入数据时发生错误，", err)
@@ -108,13 +108,13 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 		} else if strings.EqualFold("auto", commandString) {
 			// Auto 控制模式
 			if *runFlag {
-				fmt.Println("Aler in auto run mode.")
+				fmt.Println("Alerady in auto run mode.")
 			} else {
 				fmt.Println("Enter into auto run mode.")
 				*runFlag = true
 				ch <- true // 另一个goroutine退出阻塞状态
 			}
-		} else if strings.Index("cancel", commandString) != -1 {
+		} else if strings.EqualFold("cancel", commandString) {
 			if !*runFlag {
 				fmt.Println("Alerady exit from auto run mode.")
 			} else {
@@ -152,7 +152,7 @@ func autoRunMode(comObj *serial.Port, runFlag *bool) {
 	// 传递的指针变量是 被引用的 而不是 被复制的
 	for {
 		if *runFlag {
-			avergeSystemUtilization, _ := cpu.Percent(1*time.Second, false)
+			avergeSystemUtilization, _ := cpu.Percent(1*time.Second, false) // 命令行参数 sleepTime 本想放在这里，不知为什么IDE提示类型失配
 			utilizationParseToInt64 := calculateSpeedToInt64(avergeSystemUtilization[0])
 			if 0 <= utilizationParseToInt64 && utilizationParseToInt64 <= 100 {
 				// 不打算接收函数的任何返回值，接收的话提示没有新值的语法错误，因为终端被用于接收command，不能输出
