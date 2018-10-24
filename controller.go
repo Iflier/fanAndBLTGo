@@ -89,14 +89,16 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 		// 如果从终端接收到退出命令字符串，先关闭风机，然后退出
 		commandString = strings.ToLower(terminalScanner.Text())
 		if strings.EqualFold("exit", commandString) || strings.EqualFold("quit", commandString) {
-			_, err := com.Write([]byte("N,2#0;"))
+			writtenBytesNum, err := com.Write([]byte("N,2#0;"))
 			if err != nil {
 				fmt.Println("在向串口设备写入数据时发生错误，", err)
 			}
+			fmt.Printf("向串口设备写入 %v 个字节.\n", writtenBytesNum)
 			// 需要添加延迟，等待从终端读取的数据写入到串口设备后再关闭设备，然后退出
 			// 否则退出后，在下次操作（不重启串口设备）时，第一次发送的命令会导致风机停转
 			// 等待时间未精确计量
-			time.Sleep(300 * time.Millisecond)
+			// 有时可能是还没有把command写入到串口设备，主线程就已经退出，可能导致command无效
+			time.Sleep(500 * time.Millisecond)
 			*runFlag = false //通知另一个goroutine阻塞，似乎没有啥必要
 			exitCh <- true   // 取消主程序（线程？）的阻塞，所有的goroutine都会被结束
 			break
