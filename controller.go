@@ -91,6 +91,11 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 		// 如果从终端接收到退出命令字符串，先关闭风机，然后退出
 		commandString = strings.ToLower(terminalScanner.Text())
 		if strings.EqualFold("exit", commandString) || strings.EqualFold("quit", commandString) {
+			if *runFlag {
+				// 如果autorun运行的goroutine在执行操作，把*runFlag赋值为false，使该goroutine进入通道接收阻塞状态，
+				// 这样就不会对 com 对象有任何操作，避免在 com 对象的操作前后引入锁了
+				*runFlag = false
+			}
 			writtenBytesNum, err := com.Write([]byte("N,2#0;"))
 			if err != nil {
 				fmt.Println("在向串口设备写入数据时发生错误，", err)
@@ -101,8 +106,7 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 			// 等待时间未精确计量
 			// 有时可能是还没有把command写入到串口设备，主线程就已经退出，可能导致command无效
 			time.Sleep(500 * time.Millisecond)
-			*runFlag = false //通知另一个goroutine阻塞，似乎没有啥必要
-			exitCh <- true   // 取消主程序（线程？）的阻塞，所有的goroutine都会被结束
+			exitCh <- true // 取消主程序（线程？）的阻塞，所有的goroutine都会被结束
 			break
 		} else if strings.EqualFold("auto", commandString) {
 			// Auto 控制模式
@@ -158,7 +162,7 @@ func autoRunMode(comObj *serial.Port, runFlag *bool) {
 				comObj.Write(append(noResponsePrefix, append([]byte(strconv.FormatInt(utilizationParseToInt64, 10)), ";"...)...))
 			} else {
 				// 如果能运行到这里，很可能是发生了什么错误了，为避免风机失控，选择关闭它
-				comObj.Write(append(noResponsePrefix, append([]byte("0"), ";"...)...))
+				comObj.Write(append(noResponsePrefix, []byte("0;")...))
 			}
 		} else {
 			// 如果 runFlag 被修改为false，回到这里阻塞
