@@ -27,7 +27,7 @@ var responsePrefix = []byte("R,2#")
 var noResponsePrefix = []byte("N,2#")
 var comReadBuffer = make([]byte, 16)
 var commandString string
-var ch = make(chan bool)
+var autorunCh = make(chan bool)
 var exitCh = make(chan bool)
 
 // 创建一个scanner，用于从终端读取输入的命令，类似于Python语言内置的intput函数
@@ -53,6 +53,8 @@ func main() {
 	go acceptCommandMode(com, &runMode)
 	go autoRunMode(com, &runMode)
 	<-exitCh // 在此阻塞等待以上两个goroutine结束，不像Python语言可以设置某些线程为守护线程
+	close(exitCh)
+	close(autorunCh)
 	fmt.Println("Done.")
 }
 
@@ -109,7 +111,7 @@ func acceptCommandMode(comObj *serial.Port, runFlag *bool) {
 			} else {
 				fmt.Println("Enter into auto run mode.")
 				*runFlag = true
-				ch <- true // 另一个goroutine退出阻塞状态
+				autorunCh <- true // 另一个goroutine退出阻塞状态
 			}
 		} else if strings.EqualFold("cancel", commandString) {
 			if !*runFlag {
@@ -160,7 +162,7 @@ func autoRunMode(comObj *serial.Port, runFlag *bool) {
 			}
 		} else {
 			// 如果 runFlag 被修改为false，回到这里阻塞
-			<-ch
+			<-autorunCh
 		}
 	}
 }
