@@ -76,7 +76,7 @@ func calculateSpeedToInt64(utilization float64) int64 {
 
 func checkTerminalScanResult(result bool) {
 	// 检查从终端读取输入返回的状态
-	if !scanResult {
+	if !result {
 		fmt.Println("When scan input from terminal, an error may occured, prepeare to exit ...")
 		os.Exit(1)
 	}
